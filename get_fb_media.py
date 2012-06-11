@@ -11,6 +11,7 @@ import BaseHTTPServer
 import webbrowser
 import Queue
 import time
+import array
 
 APP_ID = ''
 APP_SECRET = ''
@@ -18,10 +19,7 @@ ENDPOINT = 'graph.facebook.com'
 REDIRECT_URI = 'http://127.0.0.1:9999/'
 ACCESS_TOKEN = None
 LOCAL_FILE = '.fb_access_token'
-URL_MY_PICTURES = '/fql?q=SELECT src_big FROM photo WHERE aid IN (SELECT aid FROM album WHERE owner = me()) LIMIT 5000'
-URL_FRIENDS_PICTURES = '/fql?q=SELECT src_big FROM photo WHERE aid IN (SELECT aid FROM album WHERE owner IN (SELECT uid2 FROM friend WHERE uid1 = me())) LIMIT 5000'
-URL_MY_FRIENDS = '/fql?q=SELECT uid, name FROM user WHERE uid IN (SELECT uid2 FROM friend WHERE uid1 = me()) ORDER BY name LIMIT 5000'
-URL_CURRENT_LOC_FRIENDS = '/fql?q=SELECT name, current_location FROM user WHERE uid IN (SELECT uid1 FROM friend WHERE uid2 = me())'
+URL_FB_FRIENDS_MEDIA = '/fql?q=SELECT uid, name, movies, music FROM user where uid IN (SELECT uid1 FROM friend WHERE uid2=me() LIMIT 5000) ORDER BY name LIMIT 5000'
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 print CURRENT_DIRECTORY
@@ -37,6 +35,7 @@ def get_url(path, args=None):
         endpoint = "https://"+ENDPOINT
     else:
         endpoint = "http://"+ENDPOINT
+    print endpoint+urllib.quote(path, '?/=()')+'&'+urllib.urlencode(args)
     return endpoint+urllib.quote(path, '?/=()')+'&'+urllib.urlencode(args)
 
 def get(path, args=None):
@@ -80,7 +79,7 @@ if __name__ == '__main__':
         webbrowser.open(get_url('/oauth/authorize',
                                 {'client_id':APP_ID,
                                  'redirect_uri':REDIRECT_URI,
-                                 'scope':'user_photos, friends_photos'}))
+                                 'scope':'user_likes, friends_likes'}))
 
         httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', 9999), RequestHandler)
         while ACCESS_TOKEN is None:
@@ -88,53 +87,20 @@ if __name__ == '__main__':
     else:
         ACCESS_TOKEN = open(LOCAL_FILE).read()
 
-    # Check if the pictures directory exists, otherwise we create it
-    if not os.path.exists(PHOTOS_DIRECTORY): os.mkdir(PHOTOS_DIRECTORY)
+    musics = []
+    movies = []
+    media = json.loads(get(URL_FB_FRIENDS_MEDIA))['data']
 
-    #
-    # Download all of your pictures
-    #
-    '''
-    # Get my pictures URL
-    pictures = json.loads(get(URL_MY_PICTURES))['data']
-    print "You have", len(pictures), "pictures."
-    i = 0
-    # Put them in a queue
-    for picture in pictures:
-        source = picture['src_big']
-        url_queue.put(source)
-        i = i + 1
-        print math.floor(i * 100 / len(pictures)), '%'
+    for med in media:
 
-    # Download pictures from URL in queue with 3 threads.
-    start = time.time()
-    print url_queue.empty()
-    t1 = Thread(target=download_pictures)
-    t2 = Thread(target=download_pictures)
-    t3 = Thread(target=download_pictures)
-    t1.start()
-    t2.start()
-    t3.start()'''
+        for movie in med['movies'].split(', '):
+            movies.append(movie.encode('utf-8'))
+        
+        for music in med['music'].split(', '):
+            musics.append(music.encode('utf-8'))
 
-    #
-    # Download all of your friend's pictures
-    #
-    '''
-    # Get friends ID
-    friends = json.loads(get(URL_MY_FRIENDS))['data']
-    print len(friends), "friends."
+    for music in musics:
+        print music
 
-    # For each friend, get all of their pictures
-    for friend in friends:
-        if not os.path.exists(os.path.join(PHOTOS_DIRECTORY, friend['name'])) : os.mkdir(os.path.join(PHOTOS_DIRECTORY, friend['name']))
-        pictures = json.loads(get('/fql?q=SELECT src_big FROM photo WHERE aid IN (SELECT aid FROM album WHERE owner = '+str(friend['uid'])+')'))['data']
-        for picture in pictures:
-            url_queue.put(friend['name'] + '~' + picture['src_big'])
-    print url_queue.qsize(), "pictures."
-    
-    # Launch 50 threads to download the pictures
-    i = 0
-    while i < 50:
-        Thread(target=download_pictures).start()
-        i = i + 1
-    '''
+    for movie in movies:
+        print movie
