@@ -63,16 +63,6 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write("You have successfully logged in to facebook. "
                          "You can close this window now.")
 
-# Download pictures from queue until this last one is empty.
-def download_pictures():
-    while (url_queue.empty() == False):
-        user = url_queue.get().split('~')[0]
-        source = url_queue.get().split('~')[1]
-        filename = source.split('/')[len(source.split('/')) - 1]
-        dest = os.path.join(PHOTOS_DIRECTORY, user, filename)
-        urllib.urlretrieve(source, dest)
-        print "# remaining pictures:", url_queue.qsize()
-
 if __name__ == '__main__':
     if not os.path.exists(LOCAL_FILE):
         print "Logging you in to facebook..."
