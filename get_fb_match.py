@@ -14,8 +14,8 @@ import Queue
 import time
 import array
 
-APP_ID = ''
-APP_SECRET = ''
+APP_ID = '370728202990799'
+APP_SECRET = '29f57a2839584bb59b069f4dc8456660'
 ENDPOINT = 'graph.facebook.com'
 REDIRECT_URI = 'http://127.0.0.1:9999/'
 ACCESS_TOKEN = None
@@ -75,11 +75,9 @@ if __name__ == '__main__':
     # get my facebook info
     media = json.loads(get(URL_FB_ME_MEDIA))['data'][0]
     print "You're a", media['sex'], "looking for", media['meeting_sex']
-    me = User(media['uid'], media['name'], media['sex'], media['meeting_sex'])
-    for movie in media['movies'].split(', '):
-        me.add_movie(movie.encode('utf-8'))
-    for music in media['music'].split(', '):
-        me.add_music(music.encode('utf-8'))
+    me = User(media['uid'], media['name'], media['sex'], media['meeting_sex'])    
+    me.set_movies(media['movies'].encode("utf-8").split(', '))
+    me.set_musics(media['music'].encode("utf-8").split(', '))
 
     # get my friends facebook info
     media = json.loads(get(URL_FB_FRIENDS_MEDIA))['data']
